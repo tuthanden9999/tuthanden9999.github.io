@@ -10,7 +10,7 @@ var KLoterryContract = function() {
 
 KLoterryContract.prototype = {
     init: function() {
-        this.requirePersonNumber = 2;
+        this.requirePersonNumber = 5;
         this.price = new BigNumber(0.1).times(new BigNumber(10).pow(18));
         this.historyOrderIndex = -1;
     },

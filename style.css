@@ -1,0 +1,83 @@
+body {
+	background: url("https://ak9.picdn.net/shutterstock/videos/9057499/thumb/1.jpg") no-repeat center center fixed; 
+	-webkit-background-size: cover;
+	-moz-background-size: cover;
+	-o-background-size: cover;
+	background-size: cover;
+	font-family: 'Source Sans Pro', 'sans-serif';
+}
+
+#app{
+    max-width: 1024px;
+    margin: auto;
+	background-color: rgba(255,255,255, 0.6);    
+	padding: 30px 50px;
+}
+
+#play-area {
+    border: 1px solid green;
+    display: flex;
+	justify-content: stretch;
+}
+
+.title{
+	font-size: 60px;
+	text-align: center;
+	margin-bottom: 30px;
+}
+
+.result{
+	text-align: center;
+	margin-top: 30px;
+	font-size: 25px;
+	background: white;
+	color: #fd6700;
+}
+
+.play-btn{
+	border: 0;
+	box-shadow: none;
+	border-radius: 0px;
+	padding: 10px 15px;
+	border-radius: 5px;
+	display: block;
+	margin: auto;
+	background: #fd6700;
+	color: white;
+	font-size: 20px;
+	cursor: pointer;
+}
+
+.ball-row{
+	display: flex;
+	justify-content: space-around;
+	margin-bottom: 30px;
+	margin-top: 30px;
+}
+
+.ball-box{
+	width: 130px;
+	height: 130px;
+	border-radius: 50%;
+	word-break: break-all;
+	text-align: center;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	-webkit-box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.75);
+	-moz-box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.75);
+	box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.75);
+}
+
+.player {
+	
+}
+
+.player.winner{
+	font-weight: bold;
+	color: red;
+}
+
+.player.winner::after{
+	content: " (winner)"
+}

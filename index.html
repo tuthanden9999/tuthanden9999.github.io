@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=0.5, maximum-scale=0.5, minimum-scale=0.5, user-scalable=no">
+    <meta name="x5-fullscreen" content="true">
+    <meta name="full-screen" content="yes">
+    <link rel="stylesheet" href="style.css">
+    <title>Lottery game</title>
+</head>
+
+<body>
+  
+    <div id="app">
+        <div class="title">Blottery Game</div>
+
+        <div v-if="initializing">
+            Please wait while game is initializing...
+        </div>
+
+        <div v-else>
+            <button v-if="!waiting" class="play-btn" @click="joinLottery">Play now!</button>
+            <div class="result" v-else>Waiting...</div>
+            <div class="result" v-if="result">{{ result }}</div>
+    
+            <div class="ball-row">
+                <ball 
+                    v-for="(player, i) in currentPlayers"
+                    :player="player" 
+                    :key="i"
+                />
+            </div>
+        </div>
+        
+        <hr>
+        
+        <div id="result-area">
+            <h2>Game history</h2>
+            <h3 v-if="loadGames">Loading...</h3>
+            <div v-if="!loadGames">
+                <div v-if="games.length > 0">
+                    <div v-for="game in games" :key="game.id">
+                        <b>Game ID: {{ game.id }}. Players: {{game.index}}</b>
+                        <ul>
+                            <li v-for="player in game.players" class="player" :class="player === game.winner ? 'winner' : ''">
+                                {{ player }}
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <span v-else>Empty</span>
+            </div>
+        </div>
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js"></script>
+<script src=lib/nebPay.js></script>
+<script src=lib/nebulas.js></script>
+
+<script type="x-template" id="ball">
+    <div class="ball-box" :style="randStyle()">
+        {{ player }}
+    </div>
+</script>
+
+<script>
+    // Const register
+    const SMART_CONSTRACT_ADDR = 'n1ufa21X5bNhFqCh9HEqjbqSSERr5KPLat7' // Test net
+    const HOST_ADDR = 'n1ViirLQuno8zvx8KEf8B3RuXAfvKThY3yP' // Test net
+    const INTERVAL_TIME = 5000
+    const MAX_PER_ROUND = 2
+
+    // NebPay init
+    var NebPay = require("nebpay");    
+    var nebPay = new NebPay();
+    var serialNumber
+    var callbackUrl = NebPay.config.testnetUrl;   
+    var lastNas = 0.1
+
+    // Nebulas init
+    const nebulas = require("nebulas")
+    const Account = nebulas.Account
+    const neb = new nebulas.Neb();
+    neb.setRequest(new nebulas.HttpRequest("https://testnet.nebulas.io"));
+
+    // Ball component
+    const ball = Vue.component('ball', {
+        template: '#ball',
+        props: ['player'],
+        methods: {
+            randColor() {
+                var letters = '0123456789ABCDEF';
+                var color = '#';
+                for (var i = 0; i < 6; i++) {
+                    color += letters[Math.floor(Math.random() * 16)];
+                }
+                return color;
+            },
+            randStyle() {
+                return {
+                    backgroundColor: this.randColor()
+                }
+            }
+        }
+    })
+
+    // Main component
+
+    window.app = new Vue({
+        el: '#app',
+        data: {
+            initializing: true,
+            waiting: false,
+            result: null,
+            games: [],
+            loadGames: false,
+            currentGameID: null,
+            currentPlayers: Array(MAX_PER_ROUND).fill('Empty'),
+            MAX_PER_ROUND: MAX_PER_ROUND,
+            lastPlayerAddress: null,
+        },
+        components: { ball },
+        mounted() {
+            this.getHistory().finally(() => this.initializing = false)
+        },
+        methods: {
+            joinLottery() {
+                var to = SMART_CONSTRACT_ADDR;
+                var value = 0.1;
+                var callFunction = "joinLottery"
+                var callArgs = JSON.stringify([])
+
+                const serialNumber = nebPay.call(to, value, callFunction, callArgs, {    
+                    callback: callbackUrl
+                });
+
+                this.waiting = true
+
+                this.intervalQuery = setInterval(() => {
+                    this.funcIntervalQuery(serialNumber);
+                }, INTERVAL_TIME);
+            },
+
+            funcIntervalQuery(serialNumber) {
+                var options = {
+                    callback: callbackUrl
+                }
+                nebPay.queryPayInfo(serialNumber,options) 
+                    .then((resp) => {
+                        var respObject = JSON.parse(resp)
+
+                        if(respObject.data.status === 1){
+                            const execute_result = JSON.parse(respObject.data.execute_result)
+                            this.currentGameID = execute_result.game_id
+
+                            const playerIndex = this.currentPlayers.findIndex(c => c === 'Empty')
+                            this.currentPlayers[playerIndex] = execute_result.player_address
+
+                            this.lastPlayerAddress = execute_result.player_address
+
+                            this.result = `Join game ${this.currentGameID} successfully! Waiting for other player..`
+
+                            this.intervalGetHistoryQuery = setInterval(() => {
+                                this.getHistory();
+                            }, INTERVAL_TIME);
+
+                            clearInterval(this.intervalQuery);
+                        } else if (respObject.data.status === 0) {
+                            this.result = respObject.data.execute_error
+                            clearInterval(this.intervalQuery);
+                        }
+                    })
+                    .catch(err => console.log(err))
+            },
+
+            getHistory() {
+                this.loadGames = true
+                const from = HOST_ADDR;
+
+                const gas_price = "1000000"
+                const gas_limit = "2000000"
+                const callFunction = "getHistory";
+
+                const callArgs = JSON.stringify([]);  
+                const contract = {
+                    "function": callFunction,
+                    "args": callArgs
+                }
+
+                return neb.api.call(from,SMART_CONSTRACT_ADDR,"0","0",gas_price,gas_limit,contract)
+                    .then((res) => {
+                        this.cbGetHistory(res)
+                        this.loadGames = false
+                    })
+                    .catch((err) => {
+                        console.log({err})
+                        this.loadGames = false
+                        clearInterval(this.intervalGetHistoryQuery)
+                    })
+            },
+
+            cbGetHistory(res) {
+                var result = JSON.parse(res.result)
+
+                result = result.filter(a => a !== null).reverse()
+
+                const currentGame = this.currentGameID !== null ?
+                    result.find(a => a.id === this.currentGameID) :
+                    (result[0].index >= MAX_PER_ROUND ? null : result[0])
+
+                this.processGame(currentGame)
+                
+                this.games = result              
+            },
+
+            processGame(game) {
+                if (!game) return
+                // Run spin
+                game.players.forEach((p, i) => this.currentPlayers[i] = p)
+
+                if (game.index === MAX_PER_ROUND) {
+                    this.waiting = false
+                    this.result = `Winner of game ${game.id} is: ${game.winner}. `
+                    if (this.lastPlayerAddress !== null) {
+                        if (game.winner === this.lastPlayerAddress) {
+                        this.result += 'You WIN!'
+                        } else {
+                            this.result += 'You LOOSE!'
+                        }
+                    }
+                }
+            }
+
+        }
+    });
+
+</script>
+</body>
+
+</html>

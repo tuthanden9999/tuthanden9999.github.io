@@ -14,7 +14,7 @@
 <body>
   
     <div id="app">
-        <div class="title">Blottery Game</div>
+        <div class="title">Klottery Game</div>
 
         <div v-if="initializing">
             Please wait while game is initializing...
@@ -67,8 +67,9 @@
 
 <script>
     // Const register
-    const SMART_CONSTRACT_ADDR = 'n1npz11XKh1g71WfuhM3r18T2ADRJnX1E6f' // Test net
-    const HOST_ADDR = 'n1ViirLQuno8zvx8KEf8B3RuXAfvKThY3yP' // Test net
+    //const SMART_CONSTRACT_ADDR = 'n1npz11XKh1g71WfuhM3r18T2ADRJnX1E6f' // Test net
+	const SMART_CONSTRACT_ADDR = 'n1m5TiDJX7q23XsaDKhSCcdonLbqbppQCa6' // Main net
+    const HOST_ADDR = 'n1GCcs6AaciCTci5wXuQgC4Y2z5HRwXz4zq'
     const INTERVAL_TIME = 5000
     const MAX_PER_ROUND = 5
 
@@ -83,7 +84,7 @@
     const nebulas = require("nebulas")
     const Account = nebulas.Account
     const neb = new nebulas.Neb();
-    neb.setRequest(new nebulas.HttpRequest("https://testnet.nebulas.io"));
+    neb.setRequest(new nebulas.HttpRequest("https://mainnet.nebulas.io"));
 
     // Ball component
     const ball = Vue.component('ball', {
